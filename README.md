@@ -10,7 +10,7 @@ This project reverse-engineers the Bluetooth RFCOMM protocol of **Samsung Galaxy
 - **Mouse/gesture control is now implemented with cross-platform `pyautogui`** and works on Windows environments.
 - **The Buds transport layer (`buds/connection.py`) still depends on Apple `IOBluetooth`**, so full end-to-end Buds streaming is not yet native on Windows.
 
-If you want true Windows-native Buds transport, the next step is replacing `buds/connection.py` with a Windows Bluetooth RFCOMM backend.
+For Windows use: pair Buds first, then select the Bluetooth Incoming COM port when prompted by `main.py`.
 
 ## Features
 

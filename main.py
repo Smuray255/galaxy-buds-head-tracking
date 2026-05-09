@@ -14,21 +14,20 @@ def main():
     print("=" * 45)
     print()
     
-    if not HAS_IOBLUETOOTH:
-        print("Error: Apple IOBluetooth backend not available")
-        print("Windows support is now focused on cursor control only; Buds Bluetooth transport still requires macOS IOBluetooth")
-        return
-    
-    # Auto-detect Galaxy Buds
-    result = auto_detect_buds()
-    
-    if not result:
-        addr = input("\nEnter device address manually: ").strip()
+    # Auto-detect Galaxy Buds on macOS, or request COM port on Windows/Linux
+    if HAS_IOBLUETOOTH:
+        result = auto_detect_buds()
+        if not result:
+            addr = input("\nEnter device address manually: ").strip()
+        else:
+            name, addr = result
+    else:
+        print("IOBluetooth unavailable; using serial RFCOMM mode.")
+        print("On Windows, pair Buds and use the incoming COM port (e.g., COM5).")
+        addr = input("\nEnter RFCOMM serial port: ").strip()
         if not addr:
             print("No address provided. Exiting.")
             return
-    else:
-        name, addr = result
     
     # Connect
     conn = GalaxyBudsConnection(addr, channel=27)
