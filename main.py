@@ -15,8 +15,8 @@ def main():
     print()
     
     if not HAS_IOBLUETOOTH:
-        print("Error: IOBluetooth not available")
-        print("Install: pip install pyobjc-framework-IOBluetooth")
+        print("Error: Apple IOBluetooth backend not available")
+        print("Windows support is now focused on cursor control only; Buds Bluetooth transport still requires macOS IOBluetooth")
         return
     
     # Auto-detect Galaxy Buds
