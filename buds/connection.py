@@ -1,24 +1,26 @@
 """Bluetooth connection to Galaxy Buds (macOS native)."""
 
+import platform
 import struct
 import time
 from typing import Optional, Callable, List, Tuple
-import objc
+
+objc = None
 
 from .protocol import MsgIds, MsgConstants, SpatialAudioControl
 from .message import SppMessage
 from .quaternion import Quaternion, parse_grv_data
 
-# Import macOS IOBluetooth framework
-try:
-    from Foundation import NSObject, NSRunLoop, NSDate, NSDefaultRunLoopMode
-    from IOBluetooth import (
-        IOBluetoothDevice,
-        IOBluetoothRFCOMMChannel,
-        IOBluetoothSDPUUID,
-    )
-    HAS_IOBLUETOOTH = True
-except ImportError:
+# Import macOS IOBluetooth framework only on Darwin
+if platform.system() == "Darwin":
+    try:
+        import objc
+        from Foundation import NSObject, NSRunLoop, NSDate, NSDefaultRunLoopMode
+        from IOBluetooth import IOBluetoothDevice
+        HAS_IOBLUETOOTH = True
+    except ImportError:
+        HAS_IOBLUETOOTH = False
+else:
     HAS_IOBLUETOOTH = False
 
 
@@ -272,8 +274,13 @@ class GalaxyBudsConnection:
         self.send_message(MsgIds.SPATIAL_AUDIO_CONTROL, bytes([SpatialAudioControl.KEEP_ALIVE]))
     
     def run_loop(self, duration: float):
-        """Run the run loop to process events."""
+        """Run the platform event loop to process events."""
         end_time = time.time() + duration
+        if not HAS_IOBLUETOOTH:
+            while time.time() < end_time:
+                time.sleep(0.01)
+            return
+
         while time.time() < end_time:
             NSRunLoop.currentRunLoop().runMode_beforeDate_(
                 NSDefaultRunLoopMode,
