@@ -1,86 +1,63 @@
-# Galaxy Buds 4D Spatial Head Tracking (Reverse Engineered)
+# Galaxy Buds 4D Spatial Head Tracking (Windows-focused runtime)
 
 ![Status](https://img.shields.io/badge/Status-Experimental-orange)
 ![Language](https://img.shields.io/badge/Language-Python_3.9+-blue)
 
-This project reverse-engineers the proprietary Bluetooth RFCOMM protocol of **Samsung Galaxy Buds (Pro/2/3)** to access their internal **6-DoF IMU sensor data** in real-time. It transforms your earbuds into high-fidelity head trackers for 3D visualization or hands-free HCI control.
+This project reverse-engineers the Bluetooth RFCOMM protocol of **Samsung Galaxy Buds (Pro/2/3)** to access **6-DoF IMU data** in real time for visualization and hands-free input.
 
-> 📚 **Documentation**:
-> - [Technical Report](TECHNICAL_REPORT.md): Reverse engineering process, protocol structure, and system architecture.
-> - [Methodology](METHODOLOGY.md): Academic formalization, mathematical modeling (quaternions), and fusion algorithms.
+## Important platform note
 
----
+- **Mouse/gesture control is now implemented with cross-platform `pyautogui`** and works on Windows environments.
+- **The Buds transport layer (`buds/connection.py`) still depends on Apple `IOBluetooth`**, so full end-to-end Buds streaming is not yet native on Windows.
 
-## 🚀 Features
+If you want true Windows-native Buds transport, the next step is replacing `buds/connection.py` with a Windows Bluetooth RFCOMM backend.
 
--   **Real-time Head Tracking**: Extracts Quaternion orientation data at ~100Hz.
--   **No Official App Required**: Works directly via native macOS Bluetooth stack (`IOBluetooth`).
--   **Academic Visualization**: Clean, scientific 3D gimbal visualization with Euler angles ($\phi, \theta, \psi$) and webcam overlay.
--   **Multimodal Mouse Control**:
-    -   **Point**: Move cursor with head rotation (Yaw/Pitch).
-    -   **Click**: Use hand gestures via Webcam (MediaPipe).
-        -   **Pinch** (Thumb+Index) = Left Click
-        -   **Middle Pinch** (Thumb+Middle) = Right Click
-        -   **Fist** = Drag & Drop
+## Features
 
-## 📦 Requirements
+- Real-time quaternion tracking pipeline.
+- 3D visualization with webcam overlay.
+- Head-controlled cursor movement.
+- Hand-gesture click/drag controls via MediaPipe.
 
--   **Hardware**: Samsung Galaxy Buds Pro, Buds2, Buds2 Pro, Buds FE, or Buds3 Pro.
--   **Software**: Python 3.9+.
+## Requirements
 
-## 🛠 Installation
+- Python 3.9+
+- Samsung Galaxy Buds (for sensor streaming)
 
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/fiqgant/galaxy-buds-head-tracking.git
-    cd galaxy-buds-head-tracking
-    ```
+## Installation
 
-2.  **Install dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+```bash
+git clone https://github.com/fiqgant/galaxy-buds-head-tracking.git
+cd galaxy-buds-head-tracking
+pip install -r requirements.txt
+```
 
-3.  **Connect Buds**: Pair your Galaxy Buds to your computer via Bluetooth.
-
-## 🖥️ Usage
-
-Run the main entry point:
+## Usage
 
 ```bash
 python main.py
 ```
 
-The tool will auto-detect your connected Buds. Select a mode from the menu:
+Modes:
+1. Terminal output
+2. 3D visualization
+3. Mouse control
+4. CSV logging
 
-1.  **Terminal Mode**: Raw data stream (Quaternions + Euler angles).
-2.  **Visualization Mode**: 3D Gimbal plot with orientation dashboard and webcam feed.
-3.  **Mouse Control**: Hands-free interactions. 
-    -   *Calibration*: Look at the center of the screen and press Enter to zero the sensor.
-4.  **Data Logging (CSV)**: Record sensor data (Timestamp, Euler, Quaternion) to CSV file for analysis.
-
-## 🧠 System Architecture
+## Architecture
 
 ```mermaid
 graph LR
     Buds[Galaxy Buds] -->|RFCOMM| Driver[Python Driver]
     Driver -->|Quaternion| Logic[Orientation Engine]
     Webcam -->|Video| CV[MediaPipe Logic]
-    
+
     Logic -->|Yaw/Pitch| Fusion{Fusion}
     CV -->|Gestures| Fusion
-    
-    Fusion -->|Events| OS[macOS Input]
+
+    Fusion -->|Events| OS[Windows / Cross-platform input]
 ```
 
-## 🤝 Contributing
+## License
 
-Contributions are welcome! Please open an issue to discuss proposed changes or submit a PR.
-
-## 📄 License
-
-This project is open-source under the [MIT License](LICENSE).
-
----
-
-**Disclaimer**: This is an independent project and is not affiliated with Samsung Electronics. Galaxy Buds are trademarks of Samsung Electronics Co., Ltd.
+MIT
