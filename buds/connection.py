@@ -24,6 +24,13 @@ else:
     HAS_IOBLUETOOTH = False
 
 
+try:
+    import serial
+    HAS_PYSERIAL = True
+except ImportError:
+    HAS_PYSERIAL = False
+
+
 def find_galaxy_buds() -> List[Tuple[str, str]]:
     """
     Find paired Galaxy Buds devices.
@@ -138,6 +145,8 @@ class GalaxyBudsConnection:
         self.device = None
         self.rfcomm_channel = None
         self.delegate = None
+        self.serial_conn = None
+        self.backend = "iobluetooth" if HAS_IOBLUETOOTH else "serial"
         self.connected = False
         self._buffer = b''
         self.latest_quaternion: Optional[Quaternion] = None
@@ -145,10 +154,24 @@ class GalaxyBudsConnection:
     
     def connect(self) -> bool:
         """Connect to device."""
-        if not HAS_IOBLUETOOTH:
-            print("IOBluetooth not available")
-            return False
-        
+        if HAS_IOBLUETOOTH:
+            self.backend = "iobluetooth"
+        else:
+            self.backend = "serial"
+
+        if self.backend == "serial":
+            if not HAS_PYSERIAL:
+                print("pyserial not available. Install: pip install pyserial")
+                return False
+            try:
+                self.serial_conn = serial.Serial(self.device_address, baudrate=115200, timeout=0)
+                self.connected = True
+                print(f"Connected over serial RFCOMM: {self.device_address}")
+                return True
+            except Exception as e:
+                print(f"Serial connect failed ({self.device_address}): {e}")
+                return False
+
         # Search for Spatial Audio service record
         print(f"Scanning services for {self.device_address}...")
         
@@ -244,7 +267,19 @@ class GalaxyBudsConnection:
                     print("Spatial sensor ready")
     
     def send(self, data: bytes) -> bool:
-        if not self.rfcomm_channel or not self.connected:
+        if not self.connected:
+            return False
+
+        if self.backend == "serial":
+            if not self.serial_conn:
+                return False
+            try:
+                self.serial_conn.write(data)
+                return True
+            except Exception:
+                return False
+
+        if not self.rfcomm_channel:
             return False
         try:
             result = self.rfcomm_channel.writeSync_length_(data, len(data))
@@ -276,8 +311,16 @@ class GalaxyBudsConnection:
     def run_loop(self, duration: float):
         """Run the platform event loop to process events."""
         end_time = time.time() + duration
-        if not HAS_IOBLUETOOTH:
+
+        if self.backend == "serial":
             while time.time() < end_time:
+                if self.serial_conn:
+                    try:
+                        chunk = self.serial_conn.read(4096)
+                        if chunk:
+                            self._on_data_received(chunk)
+                    except Exception:
+                        pass
                 time.sleep(0.01)
             return
 
@@ -289,6 +332,13 @@ class GalaxyBudsConnection:
     
     def disconnect(self):
         """Disconnect from device."""
+        if self.serial_conn:
+            try:
+                self.serial_conn.close()
+            except Exception:
+                pass
+            self.serial_conn = None
+
         if self.rfcomm_channel:
             try:
                 self.rfcomm_channel.closeChannel()
